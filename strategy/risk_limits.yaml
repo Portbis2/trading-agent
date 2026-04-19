@@ -1,0 +1,9 @@
+# Hard guardrails enforced by src/risk.py on every order.
+# These are loaded at the start of every run. Do not bypass in code.
+
+max_position_pct: 5        # Single position cannot exceed 5% of equity
+max_daily_loss_pct: 2      # Stop trading if day P&L <= -2% of starting equity
+max_open_positions: 5      # Refuse new opens beyond 5 concurrent positions
+allow_options: false
+allow_shorts: false
+allow_leverage: false
