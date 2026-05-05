@@ -15,6 +15,8 @@ MEMORY_DIR = REPO_ROOT / "memory"
 JOURNAL_DIR = MEMORY_DIR / "journal"
 POSITIONS_FILE = MEMORY_DIR / "positions.json"
 ACCOUNT_FILE = MEMORY_DIR / "account.json"
+WATCHLIST_FILE = MEMORY_DIR / "watchlist.json"
+STOPS_FILE = MEMORY_DIR / "stops.json"
 
 STRATEGY_DIR = REPO_ROOT / "strategy"
 RISK_LIMITS_FILE = STRATEGY_DIR / "risk_limits.yaml"
@@ -50,6 +52,24 @@ def read_account() -> dict:
 
 def write_account(account: dict) -> None:
     _write_json(ACCOUNT_FILE, account)
+
+
+def read_watchlist() -> list:
+    """Return the last pre-market screen results."""
+    return _read_json(WATCHLIST_FILE, [])
+
+
+def write_watchlist(watchlist: list) -> None:
+    _write_json(WATCHLIST_FILE, watchlist)
+
+
+def read_stops() -> dict:
+    """Return stop/target metadata keyed by symbol: {stop, target, entry_date}."""
+    return _read_json(STOPS_FILE, {})
+
+
+def write_stops(stops: dict) -> None:
+    _write_json(STOPS_FILE, stops)
 
 
 def load_risk_limits() -> dict:
