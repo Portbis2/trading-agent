@@ -45,6 +45,8 @@ class Broker:
         self._data = StockHistoricalDataClient(
             api_key=self.config.alpaca_api_key,
             secret_key=self.config.alpaca_secret_key,
+            # Free paper accounts are limited to IEX feed; SIP requires paid subscription
+            url_override="https://data.alpaca.markets",
         )
 
     @property
@@ -153,11 +155,14 @@ class Broker:
         end = datetime.now(timezone.utc)
         start = end - timedelta(days=lookback_days)
 
+        from alpaca.data.enums import DataFeed
+
         req = StockBarsRequest(
             symbol_or_symbols=symbol.upper(),
             timeframe=tf,
             start=start,
             end=end,
+            feed=DataFeed.IEX,  # free tier; swap to DataFeed.SIP with paid subscription
         )
         resp = self._data.get_stock_bars(req)
         data: Any = getattr(resp, "data", {}) or {}
