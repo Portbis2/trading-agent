@@ -1,0 +1,37 @@
+[
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "SPY"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "QQQ"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "AAPL"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "MSFT"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "NVDA"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "GOOGL"
+  },
+  {
+    "error": "{\"message\":\"subscription does not permit querying recent SIP data\"}\n",
+    "score": 0,
+    "symbol": "AMZN"
+  }
+]
