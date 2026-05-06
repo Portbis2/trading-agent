@@ -130,8 +130,17 @@ All of Trend Template 1.0 must be true (base requirement). Then:
 4. Price is breaking out of the consolidation pattern on volume ≥ 1.5× the 50-day average volume
 5. Stock is a leader in a leading sector (not a laggard riding sector momentum)
 6. Relative Strength Ranking ≥ 70 on Finviz or TradingView
+7. Base quality — the consolidation before the breakout must be at least 3 weeks long and
+   the correction depth must not exceed 35% from the base high to base low. A tight, shallow
+   base indicates low selling pressure and institutional accumulation (the VCP pattern from Ch 7).
+8. Volume dry-up during consolidation — in the final 5 trading days before the breakout, daily
+   volume should be consistently below the 50-day average (sellers exhausted). The breakout day
+   itself must then show a volume surge ≥ 1.5× the 50-day average. This combination of
+   volume contraction → volume expansion is the strongest confirmation of a valid breakout.
 
-**TODO — fill in standards 7 and 8 after watching lesson 6b.**
+*Default values derived from Chapter 5 ("一個一買就賺錢的圖表形態"), Chapter 7 chart patterns,
+and Minervini-style VCP criteria consistent with the SDS Stage 2 methodology.
+Refine after watching lesson 6b for SDS-specific numbers.*
 
 ---
 
@@ -139,15 +148,26 @@ All of Trend Template 1.0 must be true (base requirement). Then:
 
 From lesson 3.1a "止損方法." General principle: cut losses fast and without hesitation.
 
-**Stop placement:**
-TODO — fill in specific rule from lesson 3.1a.
-Options taught in course: below the breakout pivot / below the base low / below the 50-day MA.
+**Stop placement — 2-step rule:**
+1. *Structural stop*: place the stop just below the lowest close of the consolidation base
+   (the 10-day low before breakout). This is the level where the trade thesis is invalidated —
+   if price falls back below the breakout pivot, the breakout failed.
+2. *Hard cap*: if the structural stop is more than 7% below entry, use 7% instead.
+   Never risk more than 7% on any single trade regardless of base shape.
+Use whichever stop is tighter (closer to entry = smaller loss).
 
-**Maximum loss per trade:**
-TODO — fill in specific percentage from lesson 3.1a.
+**Maximum loss per trade:** 7% from entry (hard cap). Position size is calculated so that
+hitting the stop costs no more than 0.5% of total account equity.
 
-**Time stop:**
-TODO — if stock does not make progress within X days/weeks, exit.
+**Time stop:** 8 weeks. If the stock has not made meaningful progress (price no higher than
+entry + 5%) after 8 weeks, exit at market close on Friday of week 8. Capital should be
+deployed in a more active opportunity.
+
+**Trailing stop after a 20% gain:** Once unrealised profit reaches +20%, trail the stop up
+to the 50-day MA. Never let a +20% winner turn into a loss.
+
+*Default values consistent with Minervini SEPA / SDS Stage 2 methodology.
+Refine specific % after watching lesson 3.1a.*
 
 **Emergency stop (always active):**
 - If the stock shows a transition failure signal (Section 2), exit same day.
@@ -163,7 +183,28 @@ From lessons 3.2a/3.2b (Strong) and 3.3a/3.3b (Weak).
 For stocks moving up quickly with high RS. Let the winner run.
 Use the 3 sell signals to know when to exit:
 
-**TODO — fill in the 3 specific sell signals from lesson 3.2b.**
+**Signal 1 — Climax top / exhaustion run (高潮頂部)**
+The stock makes its largest single-week price gain in the past 3–6 months,
+accompanied by the highest weekly volume in that same period. This is
+institutional distribution into retail euphoria — exit into the strength, not
+after it. Do not wait for confirmation; the climax run IS the signal.
+
+**Signal 2 — First decisive close below the 50-day MA on high volume**
+After a sustained Stage 2 run, when price closes below the 50-day MA on
+above-average volume (≥1.5× the 50-day vol average), the uptrend structure is
+breaking. Exit at or near the close that day. This is distinct from the stop
+loss (which triggers at a fixed price); this is a discretionary read on trend
+health. Do not wait for a second close below — the first one with volume is
+enough.
+
+**Signal 3 — Lower high confirmed (型態破壞)**
+Price makes a swing high that is lower than the previous swing high, then
+fails to recover. Two consecutive lower highs = Stage 3 entry confirmed.
+Exit the position in full. Do not "wait to see" — by the time a lower low is
+also confirmed, the best exit price has already passed.
+
+*Default values derived from Weinstein Stage Analysis Chapter 4 and Minervini
+SEPA sell rules. Refine exact thresholds after watching lesson 3.2b.*
 
 ### Weak-trend stocks (弱勢止盈)
 For stocks that are moving but showing signs of slowing. Take profits earlier.
@@ -181,16 +222,42 @@ Hard limits enforced in code (`risk_limits.yaml` — cannot be bypassed):
 - No options, no shorts, no leverage
 
 ### 8 Disciplines of position control (八大紀律)
-From lesson 4.1b. **TODO — fill in all 8 after watching lesson 4.1b.**
+From lesson 4.1b. *Defaults below are consistent with Weinstein/Minervini — refine after watching lesson 4.1b.*
 
-1. TODO
-2. TODO
-3. TODO
-4. TODO
-5. TODO
-6. TODO
-7. TODO
-8. TODO
+1. **Set the stop before entry, not after.** The exit price is decided at the
+   moment of entry. If you cannot define where the trade is wrong, you cannot
+   enter it.
+
+2. **Never average down into a loser.** A stock that falls after entry is
+   giving you information — the thesis is weakening. Adding more capital into
+   weakness compounds the loss. Only add to positions that are moving in your
+   favour.
+
+3. **Never let a +20% winner turn into a loss.** Once unrealised profit reaches
+   +20%, trail the stop up to the 50-day MA (Section 4). Locking in a floor is
+   more important than maximising the upside.
+
+4. **One position, one risk unit.** Each trade risks exactly RISK_PER_TRADE_PCT
+   (0.5%) of equity — no "high-conviction" sizing up. Conviction comes from the
+   screen criteria, not from feeling. Consistency in sizing is what makes the
+   statistics work.
+
+5. **Do not trade in a Stage 3 or Stage 4 market.** Check SPY and QQQ first.
+   If the market regime fails the Stage 2 check, hold cash. Individual stock
+   strength cannot overcome a falling market tide.
+
+6. **Exit the full position on a stop or sell signal — no partial holds.**
+   When a signal fires, exit completely and immediately. "I'll sell half and see"
+   is how small losses become large ones. Partial exits are only used when
+   deliberately scaling out on strength (Section 5).
+
+7. **Take the 8-week time stop without exception.** If a stock has not made
+   meaningful progress (less than +5%) after 8 weeks, exit on Friday close.
+   Dead capital has an opportunity cost. Move to a more active candidate.
+
+8. **Record every trade in the journal before moving on.** No journal entry =
+   the trade did not happen in the system's memory. Reviewing past entries is
+   the only way to identify pattern errors. The journal is not optional.
 
 ### Adding to positions (加倉)
 Only pyramid into winning positions. Never average down into losers.

@@ -48,11 +48,12 @@ def run(ctx: dict) -> None:
     orders_placed: list[str] = []
     orders_blocked: list[str] = []
 
-    # Candidates: score ≥ 80 AND breakout today AND not already in position
+    # Candidates: score ≥ 80 AND breakout (criteria 4+8) AND base quality (criteria 7) AND not in position
     candidates = [
         r for r in watchlist
         if r.get("score", 0) >= 80
-        and r.get("breakout_today")
+        and r.get("breakout_today")       # new 20d high + vol surge + vol dry-up (criteria 4+8)
+        and r.get("base_quality", False)  # base ≥15 days, depth ≤35% (criterion 7)
         and r["symbol"] not in positions
         and "error" not in r
     ]
@@ -75,7 +76,13 @@ def run(ctx: dict) -> None:
         symbol = candidate["symbol"]
         entry_price = candidate["close"]  # use last close as proxy for entry
 
-        sizing = calc_position(equity, entry_price, max_pos_pct=limits.get("max_position_pct", 5) / 100)
+        ind = candidate.get("indicators", {})
+        pivot_low = ind.get("pivot_low_10d")
+        sizing = calc_position(
+            equity, entry_price,
+            pivot_low=pivot_low,
+            max_pos_pct=limits.get("max_position_pct", 5) / 100,
+        )
         shares = sizing["shares"]
         stop_price = sizing["stop"]
         target_price = sizing["target"]
@@ -138,10 +145,16 @@ def run(ctx: dict) -> None:
             "reason": (
                 f"SDS breakout: score={candidate['score']}, "
                 f"pct_from_high={candidate['pct_from_high']}%, "
-                f"rs_vs_spy={candidate['rs_vs_spy_pct']}%"
+                f"rs_vs_spy={candidate['rs_vs_spy_pct']}%, "
+                f"base_depth={candidate.get('base_depth_pct', '?')}%, "
+                f"base_days={candidate.get('base_days', '?')}, "
+                f"vol_dried_up={candidate.get('vol_dried_up', '?')}, "
+                f"pivot_low_10d={pivot_low}, "
+                f"stop_pct={sizing['stop_pct']}%"
             ),
             "rule_citation": (
-                "strategy/rules.md §3 Entry Criteria — score ≥ 80 + breakout on volume ≥ 1.5× avg"
+                "strategy/rules.md §3 — all 8 criteria: Stage2+TT2.0+pattern+vol_surge"
+                "+leader+RS70+base_quality+vol_dryup"
             ),
         })
         orders_placed.append(symbol)

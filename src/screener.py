@@ -23,8 +23,9 @@ if TYPE_CHECKING:
     from src.broker import Broker
 
 LOOKBACK_DAYS = 320  # calendar days → ~220 trading days; enough for 200-day MA
-STOP_PCT = 0.07      # default stop loss: 7% below entry
+MAX_STOP_PCT = 0.07  # hard cap: never risk more than 7% from entry
 RISK_PER_TRADE_PCT = 0.005  # risk 0.5% of equity per trade
+STOP_PCT = MAX_STOP_PCT  # alias for external callers
 
 
 # ---------------------------------------------------------------------------
@@ -106,10 +107,31 @@ def compute_indicators(bars: list[dict]) -> dict | None:
     idx_3m = -min(63, len(closes) - 1)
     perf_3m = (closes[-1] / closes[idx_3m]) - 1.0
 
-    # Breakout: new 20-day closing high + volume ≥ 1.5× 50-day avg
+    # --- Criterion 7: Base quality (≥15 trading days, depth ≤35%) ---
+    # Look at last 60 bars for the most recent consolidation window
+    base_window = closes[-60:]
+    base_high = max(base_window) if base_window else current
+    base_low = min(base_window) if base_window else current
+    base_depth = (base_high - base_low) / base_high if base_high > 0 else 1.0
+    # Count how many of the last 60 days are within 10% of the base high (tight range = base)
+    base_days = sum(1 for c in base_window if c >= base_high * 0.90)
+    base_quality = (base_depth <= 0.35) and (base_days >= 15)
+
+    # --- Criterion 8: Volume dry-up before breakout ---
+    # Last 5 days (excluding today) should average below 50-day vol avg
+    pre_breakout_vols = volumes[-6:-1]  # 5 days before today
+    avg_pre_vol = sum(pre_breakout_vols) / len(pre_breakout_vols) if pre_breakout_vols else vol_ma50
+    vol_dried_up = avg_pre_vol < vol_ma50
+
+    # Breakout: new 20-day closing high + volume surge (Criterion 4 + 8 combined)
     prior_20 = closes[-21:-1]
     high_20d = max(prior_20) if prior_20 else current
-    breakout = (current > high_20d) and (today_vol >= 1.5 * vol_ma50)
+    vol_surge = today_vol >= 1.5 * vol_ma50
+    breakout = (current > high_20d) and vol_surge and vol_dried_up
+
+    # 10-day pivot low: lowest close in the 10 days before today (structural stop anchor)
+    pivot_window = closes[-11:-1]  # 10 days preceding today
+    pivot_low_10d = min(pivot_window) if pivot_window else current
 
     return {
         "close": current,
@@ -127,6 +149,13 @@ def compute_indicators(bars: list[dict]) -> dict | None:
         "higher_highs": higher_highs,
         "perf_3m": perf_3m,
         "breakout_today": breakout,
+        "base_quality": base_quality,
+        "base_depth_pct": round(base_depth * 100, 1),
+        "base_days": base_days,
+        "base_low": base_low,
+        "pivot_low_10d": round(pivot_low_10d, 2),
+        "vol_dried_up": vol_dried_up,
+        "vol_surge_today": vol_surge,
     }
 
 
@@ -177,19 +206,48 @@ def sds_score(t10_passes: bool, t20: dict) -> int:
 # Position sizing
 # ---------------------------------------------------------------------------
 
-def calc_position(equity: float, entry_price: float, max_pos_pct: float = 0.05) -> dict:
+def calc_position(
+    equity: float,
+    entry_price: float,
+    pivot_low: float | None = None,
+    max_pos_pct: float = 0.05,
+) -> dict:
     """Calculate shares, stop, and target for a new entry.
 
+    Stop logic (lesson 3.1a):
+      1. Structural stop = 1% below the base pivot low (lowest close in 10-day base).
+      2. Hard cap = MAX_STOP_PCT (7%) below entry.
+      Use the tighter of the two (smaller loss).
+
     Risk model: lose at most RISK_PER_TRADE_PCT of equity if stop is hit.
-    Stop: STOP_PCT below entry. Target: 3:1 reward/risk.
+    Target: 3:1 reward-to-risk ratio.
     """
+    # Step 1: structural stop below base pivot
+    if pivot_low and pivot_low > 0:
+        structural_stop = round(pivot_low * 0.99, 2)
+        structural_stop_pct = (entry_price - structural_stop) / entry_price
+    else:
+        structural_stop = round(entry_price * (1 - MAX_STOP_PCT), 2)
+        structural_stop_pct = MAX_STOP_PCT
+
+    # Step 2: hard cap at 7%
+    hard_stop = round(entry_price * (1 - MAX_STOP_PCT), 2)
+
+    # Use tighter stop (higher price = smaller loss)
+    if structural_stop_pct <= MAX_STOP_PCT:
+        stop = structural_stop
+        stop_pct = structural_stop_pct
+    else:
+        stop = hard_stop
+        stop_pct = MAX_STOP_PCT
+
     risk_dollars = equity * RISK_PER_TRADE_PCT
-    shares = int(risk_dollars / (entry_price * STOP_PCT))
+    shares = int(risk_dollars / (entry_price * max(stop_pct, 0.01)))
     max_shares = int((equity * max_pos_pct) / entry_price)
     shares = max(1, min(shares, max_shares))
-    stop = round(entry_price * (1 - STOP_PCT), 2)
-    target = round(entry_price * (1 + STOP_PCT * 3), 2)  # 3:1 reward
-    return {"shares": shares, "stop": stop, "target": target}
+
+    target = round(entry_price + (entry_price - stop) * 3, 2)  # 3:1 reward
+    return {"shares": shares, "stop": stop, "target": target, "stop_pct": round(stop_pct * 100, 1)}
 
 
 # ---------------------------------------------------------------------------
